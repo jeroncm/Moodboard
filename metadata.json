@@ -1,0 +1,5 @@
+{
+  "name": "AI Mood Board Generator",
+  "description": "Generate a beautiful, collage-style mood board for any topic. Using Gemini, this app creates a curated collection of images, colors, and text snippets to inspire your creative projects, study sessions, or planning.",
+  "requestFramePermissions": []
+}
