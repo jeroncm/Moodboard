@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MoodBoard } from './components/MoodBoard';
@@ -160,7 +159,7 @@ const App: React.FC = () => {
 
   return (
     <main 
-      className="min-h-screen w-full bg-[#a1988e] p-4 sm:p-8 md:p-12 relative overflow-hidden flex flex-col items-center select-none"
+      className="min-h-screen w-full bg-[#a1988e] p-4 sm:p-8 md:p-12 relative overflow-hidden flex flex-col items-center select-none textured-bg"
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
