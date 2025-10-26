@@ -1,4 +1,3 @@
-
 import type React from 'react';
 import type { NoteItem } from '../../types';
 
@@ -8,9 +7,9 @@ interface NoteCardProps extends NoteItem {
 
 export const NoteCard: React.FC<NoteCardProps> = ({ id, text, style, onMouseDown }) => {
   return (
-    <div 
+    <div
       data-draggable="true"
-      className="absolute bg-[#d1c9c0] p-4 shadow-md w-48 h-24 transition-transform duration-300 hover:scale-110 hover:z-20 cursor-grab"
+      className="absolute bg-[#d1c9c0] p-4 shadow-lg w-48 h-24 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl hover:z-20 cursor-grab"
       style={style}
       onMouseDown={(e) => onMouseDown(e, id)}
     >

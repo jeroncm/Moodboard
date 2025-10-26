@@ -1,196 +1,191 @@
-import React, { useState, useRef } from 'react';
-import { SearchBar } from './components/SearchBar';
-import { MoodBoard } from './components/MoodBoard';
-import { Loader } from './components/Loader';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Welcome } from './components/Welcome';
+import { Loader } from './components/Loader';
 import { ClarificationForm } from './components/ClarificationForm';
+import { MoodBoard } from './components/MoodBoard';
 import { analyzeTopic, generateMoodBoardContent, generateMoreItems } from './services/geminiService';
 import type { MoodBoardItem } from './types';
 
-type AppState = 'idle' | 'analyzing' | 'needsClarification' | 'generating' | 'success' | 'error';
+type AppState = 'welcome' | 'clarifying' | 'loading' | 'board' | 'error';
 
-const App: React.FC = () => {
-  const [appState, setAppState] = useState<AppState>('idle');
-  const [moodBoardItems, setMoodBoardItems] = useState<MoodBoardItem[]>([]);
-  const [loadingMessage, setLoadingMessage] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
-
-  const [currentTopic, setCurrentTopic] = useState<string>('');
+function App() {
+  const [appState, setAppState] = useState<AppState>('welcome');
+  const [topic, setTopic] = useState('');
   const [clarificationQuestions, setClarificationQuestions] = useState<string[]>([]);
-  
+  const [progressMessage, setProgressMessage] = useState('');
+  const [items, setItems] = useState<MoodBoardItem[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isGeneratingMore, setIsGeneratingMore] = useState(false);
+
+  const boardRef = useRef<HTMLDivElement>(null);
   const [draggedItem, setDraggedItem] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null);
-  const moodBoardRef = useRef<HTMLDivElement>(null);
 
-  const handleProgress = (message: string) => {
-    setLoadingMessage(message);
-  };
-
-  const handleSearch = async (topic: string) => {
-    if (!topic.trim()) {
-      setError('Please enter a topic.');
-      return;
-    }
-    setAppState('analyzing');
+  const handleTopicSubmit = async (newTopic: string) => {
+    setTopic(newTopic);
+    setItems([]);
+    setAppState('loading');
+    setProgressMessage('Analyzing your topic...');
     setError(null);
-    setMoodBoardItems([]);
-    setCurrentTopic(topic);
-    setLoadingMessage('Analyzing topic...');
-
     try {
-      const analysis = await analyzeTopic(topic);
+      const analysis = await analyzeTopic(newTopic);
       if (analysis.isClear) {
-        await handleGenerate(topic);
+        await handleStartGeneration(newTopic, {});
       } else {
         setClarificationQuestions(analysis.questions || []);
-        setAppState('needsClarification');
+        setAppState('clarifying');
       }
-    } catch (err) {
-      console.error(err);
-      setError('Sorry, something went wrong during analysis. Please try again.');
+    } catch (e) {
+      console.error(e);
+      setError('Sorry, something went wrong while analyzing your topic. Please try again.');
       setAppState('error');
     }
   };
 
-  const handleGenerate = async (topic: string, answers: Record<string, string> = {}) => {
-    setAppState('generating');
+  const handleClarificationSubmit = async (newAnswers: Record<string, string>) => {
+    await handleStartGeneration(topic, newAnswers);
+  };
+
+  const handleStartGeneration = async (currentTopic: string, currentAnswers: Record<string, string>) => {
+    setAppState('loading');
+    setProgressMessage('Starting mood board generation...');
+    setError(null);
     try {
-      const items = await generateMoodBoardContent(topic, answers, handleProgress);
-      const shuffledItems = items.sort(() => Math.random() - 0.5);
-      setMoodBoardItems(shuffledItems);
-      setAppState('success');
-    } catch (err) {
-      console.error(err);
-      setError('Sorry, something went wrong while creating your mood board. Please try again.');
+      const newItems = await generateMoodBoardContent(currentTopic, currentAnswers, setProgressMessage);
+      setItems(newItems);
+      setAppState('board');
+    } catch (e) {
+      console.error(e);
+      setError('An error occurred while generating the mood board. Please try again.');
       setAppState('error');
     }
   };
 
-  const handleAddMore = async () => {
-    setAppState('generating');
-    setLoadingMessage('Adding new inspiration...');
-     try {
-      const newItems = await generateMoreItems(currentTopic, moodBoardItems.length, handleProgress);
-      setMoodBoardItems(prevItems => [...prevItems, ...newItems]);
-      setAppState('success');
-    } catch (err) {
-      console.error(err);
-      setError('Could not add more items. Please try again.');
-      setAppState('error');
-    }
-  }
-
-  const handleMouseDown = (e: React.MouseEvent, id: string) => {
-    const target = e.currentTarget as HTMLElement;
-    // Find the draggable parent
-    const itemEl = target.closest('[data-draggable="true"]');
-    if (itemEl && moodBoardRef.current) {
-        const rect = itemEl.getBoundingClientRect();
-        const boardRect = moodBoardRef.current.getBoundingClientRect();
-        setDraggedItem({
-            id,
-            offsetX: e.clientX - rect.left,
-            offsetY: e.clientY - rect.top,
-        });
-        // Prevent default text selection behavior
-        e.preventDefault();
+  const handleGenerateMore = async () => {
+    setIsGeneratingMore(true);
+    setError(null);
+    try {
+        const newItems = await generateMoreItems(topic, items.length, () => {});
+        setItems(prev => [...prev, ...newItems]);
+    } catch (e) {
+        console.error(e);
+        setError('Could not generate more items. Please try again.');
+    } finally {
+        setIsGeneratingMore(false);
     }
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-      if (!draggedItem || !moodBoardRef.current) return;
-      const boardRect = moodBoardRef.current.getBoundingClientRect();
-      
-      const newLeft = e.clientX - draggedItem.offsetX - boardRect.left;
-      const newTop = e.clientY - draggedItem.offsetY - boardRect.top;
-
-      setMoodBoardItems(prevItems =>
-          prevItems.map(item =>
-              item.id === draggedItem.id
-                  ? {
-                      ...item,
-                      style: {
-                          ...item.style,
-                          left: `${newLeft}px`,
-                          top: `${newTop}px`,
-                          zIndex: 99, // Bring to front while dragging
-                      },
-                  }
-                  : item
-          )
-      );
+  const handleReset = () => {
+    setAppState('welcome');
+    setTopic('');
+    setItems([]);
+    setError(null);
   };
 
-  const handleMouseUp = () => {
-      if(draggedItem) {
-        // Reset z-index after dropping
-        setMoodBoardItems(prevItems =>
-          prevItems.map(item =>
-              item.id === draggedItem.id
-                  ? {
-                      ...item,
-                      style: {
-                          ...item.style,
-                          zIndex: parseInt(String(item.style.zIndex), 10) > 10 ? undefined : item.style.zIndex,
-                      },
-                  }
-                  : item
-          )
-      );
-      }
-      setDraggedItem(null);
-  };
+  const handleMouseDown = useCallback((e: React.MouseEvent, id: string) => {
+    const el = e.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    
+    const maxZ = items.reduce((max, item) => Math.max(max, (item.style.zIndex as number) || 0), 0);
+    setItems(prev => prev.map(item => item.id === id ? { ...item, style: { ...item.style, zIndex: maxZ + 1 } } : item));
+    
+    setDraggedItem({
+      id,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+    });
+    e.preventDefault();
+  }, [items]);
+  
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!draggedItem || !boardRef.current) return;
+    
+    const boardRect = boardRef.current.getBoundingClientRect();
+    const newLeft = e.clientX - boardRect.left - draggedItem.offsetX;
+    const newTop = e.clientY - boardRect.top - draggedItem.offsetY;
 
+    setItems(prevItems => prevItems.map(item => {
+        if (item.id === draggedItem.id) {
+            const newLeftPercent = (newLeft / boardRect.width) * 100;
+            const newTopPercent = (newTop / boardRect.height) * 100;
 
+            const clampedTop = Math.max(-10, Math.min(90, newTopPercent));
+            const clampedLeft = Math.max(-10, Math.min(90, newLeftPercent));
+
+            return {
+                ...item,
+                style: {
+                    ...item.style,
+                    top: `${clampedTop}%`,
+                    left: `${clampedLeft}%`,
+                }
+            };
+        }
+        return item;
+    }));
+  }, [draggedItem]);
+
+  const handleMouseUp = useCallback(() => {
+    setDraggedItem(null);
+  }, []);
+
+  useEffect(() => {
+    if (!draggedItem) return;
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mouseleave', handleMouseUp);
+
+    return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener('mouseleave', handleMouseUp);
+    };
+  }, [draggedItem, handleMouseMove, handleMouseUp]);
+  
   const renderContent = () => {
-    switch (appState) {
-      case 'analyzing':
-      case 'generating':
-        return <Loader message={loadingMessage} />;
-      case 'needsClarification':
-        return <ClarificationForm questions={clarificationQuestions} onSubmit={(answers) => handleGenerate(currentTopic, answers)} />;
-      case 'success':
-        return <MoodBoard ref={moodBoardRef} items={moodBoardItems} onMouseDown={handleMouseDown} />;
-      case 'idle':
-      case 'error':
-      default:
-        return <Welcome />;
+    switch(appState) {
+        case 'welcome':
+            return <Welcome onTopicSubmit={handleTopicSubmit} />;
+        case 'clarifying':
+            return <ClarificationForm questions={clarificationQuestions} onSubmit={handleClarificationSubmit} />;
+        case 'loading':
+            return <Loader message={progressMessage} />;
+        case 'board':
+            return (
+                <div className="w-full h-full flex flex-col items-center animate-fade-in">
+                    <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between gap-4 flex-wrap">
+                        <h2 className="text-xl font-bold text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.5)] truncate">{topic}</h2>
+                        <div className="flex items-center gap-2">
+                            <button onClick={handleGenerateMore} disabled={isGeneratingMore} className="px-4 py-2 bg-[#70665c]/80 text-white rounded-md hover:bg-[#544c44] transition-colors backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                                {isGeneratingMore ? 'Adding...' : '✨ Add More'}
+                            </button>
+                            <button onClick={handleReset} className="px-4 py-2 bg-[#f1ede9]/80 text-[#544c44] rounded-md hover:bg-white transition-colors backdrop-blur-sm">
+                                New Topic
+                            </button>
+                        </div>
+                    </div>
+                    {error && <p className="absolute top-20 text-red-300 bg-red-900/50 p-2 rounded-md z-30">{error}</p>}
+                    <MoodBoard ref={boardRef} items={items} onMouseDown={handleMouseDown} />
+                </div>
+            );
+        case 'error':
+            return (
+                <div className="text-center text-[#f1ede9] animate-fade-in">
+                    <h2 className="text-3xl font-serif-display font-bold mb-2">Oops!</h2>
+                    <p className="text-[#d1c9c0] mb-8 max-w-md">{error}</p>
+                    <button onClick={handleReset} className="px-6 py-3 bg-[#70665c] text-white rounded-md hover:bg-[#544c44] transition-colors font-semibold">
+                        Try Again
+                    </button>
+                </div>
+            );
     }
-  }
+  };
 
   return (
-    <main 
-      className="min-h-screen w-full bg-[#a1988e] p-4 sm:p-8 md:p-12 relative overflow-hidden flex flex-col items-center select-none textured-bg"
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    >
-      <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-black/10 pointer-events-none"></div>
-      
-      <div className="w-full max-w-4xl z-10 mb-8">
-        <h1 className="text-4xl sm:text-5xl font-serif-display text-center text-[#f1ede9] mb-2 font-bold tracking-wider">
-          Visual Muse
-        </h1>
-        <p className="text-center text-[#d1c9c0] mb-6">Enter a topic and let AI craft your inspiration.</p>
-        <SearchBar onSearch={handleSearch} isLoading={appState === 'analyzing' || appState === 'generating'} />
-        {appState === 'success' && (
-           <div className="text-center mt-4">
-            <button
-              onClick={handleAddMore}
-              className="px-6 py-2 bg-[#70665c]/80 text-white rounded-md hover:bg-[#544c44] disabled:bg-[#8a8178] disabled:cursor-not-allowed transition-colors font-semibold backdrop-blur-sm"
-              disabled={appState === 'generating'}
-            >
-              + Add More
-            </button>
-           </div>
-        )}
-        {error && <p className="text-center text-red-200 mt-4 bg-red-800/50 p-2 rounded-md">{error}</p>}
-      </div>
-      
-      <div className="w-full flex-grow flex items-center justify-center">
+    <main className="w-full min-h-screen bg-[#221f1c] bg-gradient-to-br from-[#221f1c] to-[#3a342f] flex items-center justify-center p-4 font-sans overflow-hidden">
         {renderContent()}
-      </div>
     </main>
   );
-};
+}
 
 export default App;

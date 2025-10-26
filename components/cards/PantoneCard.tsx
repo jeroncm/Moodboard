@@ -1,4 +1,3 @@
-
 import type React from 'react';
 import type { PantoneItem } from '../../types';
 
@@ -10,7 +9,7 @@ export const PantoneCard: React.FC<PantoneCardProps> = ({ id, colorName, hex, st
   return (
     <div
       data-draggable="true"
-      className="absolute w-28 h-36 shadow-lg flex flex-col transition-transform duration-300 hover:scale-110 hover:z-20 cursor-grab"
+      className="absolute w-28 h-36 shadow-lg flex flex-col transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl hover:z-20 cursor-grab"
       style={style}
       onMouseDown={(e) => onMouseDown(e, id)}
     >

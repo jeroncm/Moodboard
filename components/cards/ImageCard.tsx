@@ -1,4 +1,3 @@
-
 import type React from 'react';
 import type { ImageItem } from '../../types';
 
@@ -10,7 +9,7 @@ export const ImageCard: React.FC<ImageCardProps> = ({ id, imageUrl, caption, sty
   return (
     <div
       data-draggable="true"
-      className="absolute bg-[#f1ede9] p-3 pb-8 shadow-lg transition-transform duration-300 hover:scale-105 hover:z-20 cursor-grab" 
+      className="absolute bg-[#f1ede9] p-3 pb-8 shadow-lg transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl hover:z-20 cursor-grab"
       style={style}
       onMouseDown={(e) => onMouseDown(e, id)}
     >
