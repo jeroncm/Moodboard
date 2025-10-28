@@ -17,8 +17,8 @@ export const ImageCard: React.FC<ImageCardProps> = ({ onMouseDown, onItemClick, 
       onClick={() => onItemClick(item)}
     >
       <div className="absolute top-2 left-1/2 -translate-x-1/2 w-16 h-4 bg-white/30 backdrop-blur-sm transform rotate-1"></div>
-      <div className="bg-gray-200 pointer-events-none">
-        <img src={imageUrl} alt={caption} className="w-full h-auto object-cover max-w-[250px] max-h-[250px]" />
+      <div className="bg-gray-200 pointer-events-none distressed-image-border">
+        <img src={imageUrl} alt={caption} className="w-full h-auto object-cover max-w-[250px] max-h-[250px] block" />
       </div>
       <p className="absolute bottom-2 left-3 right-3 text-center text-[#70665c] font-script text-lg pointer-events-none">{caption}</p>
     </div>

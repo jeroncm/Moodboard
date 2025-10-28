@@ -10,6 +10,69 @@ import { MoodBoardItem, ItemType, ImageItem } from './types';
 
 type AppState = 'welcome' | 'clarifying' | 'loading' | 'board' | 'error';
 
+interface Texture {
+  name: string;
+  className: string;
+}
+
+interface TextureSelectorProps {
+  textures: Texture[];
+  selectedTexture: string;
+  onChange: (className: string) => void;
+}
+
+const TextureSelector: React.FC<TextureSelectorProps> = ({ textures, selectedTexture, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)} 
+        className="px-4 py-2 bg-[#70665c]/80 text-white rounded-md hover:bg-[#544c44] transition-colors backdrop-blur-sm flex items-center gap-2"
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.69l.34 3.44 3.44.34-2.6 2.6.62 3.6-3.26-1.72-3.26 1.72.62-3.6-2.6-2.6 3.44-.34L12 2.69zM2 12l.34-3.44L5.78 8.2l-2.6 2.6L3.8 14.4l-3.26 1.72 3.26-1.72L2.18 10.8l2.6-2.6-3.44.34L2 12zM12 21.31l-.34-3.44-3.44-.34 2.6-2.6-.62-3.6 3.26 1.72 3.26-1.72-.62 3.6 2.6 2.6-3.44.34L12 21.31z"/></svg>
+        Texture
+      </button>
+      {isOpen && (
+        <div className="absolute top-full right-0 mt-2 w-48 bg-[#3a342f] border border-[#544c44] rounded-md shadow-lg z-50 overflow-hidden animation-fade-in">
+          <ul role="menu">
+            {textures.map(texture => (
+              <li key={texture.className}>
+                <button 
+                  role="menuitemradio"
+                  aria-checked={selectedTexture === texture.className}
+                  onClick={() => {
+                    onChange(texture.className);
+                    setIsOpen(false);
+                  }}
+                  className="w-full text-left px-4 py-2 text-white/80 hover:bg-[#544c44] hover:text-white transition-colors flex justify-between items-center"
+                >
+                  <span>{texture.name}</span>
+                  {selectedTexture === texture.className && <span className="text-sm">✔</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 function App() {
   const [appState, setAppState] = useState<AppState>('welcome');
   const [topic, setTopic] = useState('');
@@ -20,9 +83,17 @@ function App() {
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
   const [zoomedItem, setZoomedItem] = useState<MoodBoardItem | null>(null);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [backgroundTexture, setBackgroundTexture] = useState('texture-noise');
 
   const boardRef = useRef<HTMLDivElement>(null);
   const [draggedItem, setDraggedItem] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null);
+
+  const textures: Texture[] = [
+    { name: 'Subtle Noise', className: 'texture-noise' },
+    { name: 'Paper Fiber', className: 'texture-paper' },
+    { name: 'Linen Weave', className: 'texture-linen' },
+    { name: 'Wood Grain', className: 'texture-wood' },
+  ];
 
   const handleTopicSubmit = async (newTopic: string) => {
     setTopic(newTopic);
@@ -177,6 +248,7 @@ function App() {
                     <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between gap-4 flex-wrap">
                         <h2 className="text-xl font-bold text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.5)] truncate">{topic}</h2>
                         <div className="flex items-center gap-2">
+                            <TextureSelector textures={textures} selectedTexture={backgroundTexture} onChange={setBackgroundTexture} />
                             <button onClick={handleOpenGallery} className="px-4 py-2 bg-[#70665c]/80 text-white rounded-md hover:bg-[#544c44] transition-colors backdrop-blur-sm flex items-center gap-2">
                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                                 Gallery
@@ -207,7 +279,7 @@ function App() {
   };
 
   return (
-    <main className="w-full min-h-screen bg-[#221f1c] bg-gradient-to-br from-[#221f1c] to-[#3a342f] flex items-center justify-center p-4 font-sans overflow-hidden">
+    <main className={`w-full min-h-screen bg-[#221f1c] bg-gradient-to-br from-[#221f1c] to-[#3a342f] flex items-center justify-center p-4 font-sans overflow-hidden relative ${backgroundTexture}`}>
         {renderContent()}
         {isGalleryOpen && (
             <GalleryView
