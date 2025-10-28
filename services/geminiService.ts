@@ -35,7 +35,7 @@ export const analyzeTopic = async (topic: string): Promise<{ isClear: boolean; q
     Your response must be a valid JSON object.
   `;
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-pro',
+    model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
       responseMimeType: 'application/json',
@@ -75,7 +75,7 @@ const generateTextAndPrompts = async (topic: string, answers: Record<string, str
   `;
 
   const response = await ai.models.generateContent({
-    model: 'gemini-2.5-pro',
+    model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
       responseMimeType: 'application/json',
@@ -186,7 +186,7 @@ export const generateMoreItems = async (
     Example response: { "imagePrompt": "A close up of rain drops on a green leaf, cinematic lighting", "note": "Natural textures" }
   `;
   const textResponse = await ai.models.generateContent({
-    model: 'gemini-2.5-pro',
+    model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
       responseMimeType: 'application/json',

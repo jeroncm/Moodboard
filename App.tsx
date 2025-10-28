@@ -3,8 +3,10 @@ import { Welcome } from './components/Welcome';
 import { Loader } from './components/Loader';
 import { ClarificationForm } from './components/ClarificationForm';
 import { MoodBoard } from './components/MoodBoard';
+import { ZoomView } from './components/ZoomView';
+import { GalleryView } from './components/GalleryView';
 import { analyzeTopic, generateMoodBoardContent, generateMoreItems } from './services/geminiService';
-import type { MoodBoardItem } from './types';
+import { MoodBoardItem, ItemType, ImageItem } from './types';
 
 type AppState = 'welcome' | 'clarifying' | 'loading' | 'board' | 'error';
 
@@ -16,6 +18,8 @@ function App() {
   const [items, setItems] = useState<MoodBoardItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isGeneratingMore, setIsGeneratingMore] = useState(false);
+  const [zoomedItem, setZoomedItem] = useState<MoodBoardItem | null>(null);
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
 
   const boardRef = useRef<HTMLDivElement>(null);
   const [draggedItem, setDraggedItem] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null);
@@ -73,6 +77,23 @@ function App() {
         setIsGeneratingMore(false);
     }
   };
+  
+  const handleItemClick = (item: MoodBoardItem) => {
+    setZoomedItem(item);
+  };
+
+  const handleCloseZoom = () => {
+    setZoomedItem(null);
+  };
+  
+  const handleOpenGallery = () => {
+    setIsGalleryOpen(true);
+  };
+
+  const handleCloseGallery = () => {
+    setIsGalleryOpen(false);
+  };
+
 
   const handleReset = () => {
     setAppState('welcome');
@@ -156,6 +177,10 @@ function App() {
                     <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between gap-4 flex-wrap">
                         <h2 className="text-xl font-bold text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.5)] truncate">{topic}</h2>
                         <div className="flex items-center gap-2">
+                            <button onClick={handleOpenGallery} className="px-4 py-2 bg-[#70665c]/80 text-white rounded-md hover:bg-[#544c44] transition-colors backdrop-blur-sm flex items-center gap-2">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                                Gallery
+                            </button>
                             <button onClick={handleGenerateMore} disabled={isGeneratingMore} className="px-4 py-2 bg-[#70665c]/80 text-white rounded-md hover:bg-[#544c44] transition-colors backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed">
                                 {isGeneratingMore ? 'Adding...' : '✨ Add More'}
                             </button>
@@ -165,7 +190,7 @@ function App() {
                         </div>
                     </div>
                     {error && <p className="absolute top-20 text-red-300 bg-red-900/50 p-2 rounded-md z-30">{error}</p>}
-                    <MoodBoard ref={boardRef} items={items} onMouseDown={handleMouseDown} />
+                    <MoodBoard ref={boardRef} items={items} onMouseDown={handleMouseDown} onItemClick={handleItemClick} />
                 </div>
             );
         case 'error':
@@ -184,6 +209,14 @@ function App() {
   return (
     <main className="w-full min-h-screen bg-[#221f1c] bg-gradient-to-br from-[#221f1c] to-[#3a342f] flex items-center justify-center p-4 font-sans overflow-hidden">
         {renderContent()}
+        {isGalleryOpen && (
+            <GalleryView
+                items={items.filter(item => item.type === ItemType.Image) as ImageItem[]}
+                onClose={handleCloseGallery}
+                onImageClick={handleItemClick}
+            />
+        )}
+        {zoomedItem && <ZoomView item={zoomedItem} onClose={handleCloseZoom} />}
     </main>
   );
 }

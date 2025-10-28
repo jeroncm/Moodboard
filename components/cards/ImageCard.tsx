@@ -3,15 +3,18 @@ import type { ImageItem } from '../../types';
 
 interface ImageCardProps extends ImageItem {
   onMouseDown: (event: React.MouseEvent, id: string) => void;
+  onItemClick: (item: ImageItem) => void;
 }
 
-export const ImageCard: React.FC<ImageCardProps> = ({ id, imageUrl, caption, style, onMouseDown }) => {
+export const ImageCard: React.FC<ImageCardProps> = ({ onMouseDown, onItemClick, ...item }) => {
+  const { id, imageUrl, caption, style } = item;
   return (
     <div
       data-draggable="true"
       className="absolute bg-[#f1ede9] p-3 pb-8 shadow-lg transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl hover:z-20 cursor-grab"
       style={style}
       onMouseDown={(e) => onMouseDown(e, id)}
+      onClick={() => onItemClick(item)}
     >
       <div className="absolute top-2 left-1/2 -translate-x-1/2 w-16 h-4 bg-white/30 backdrop-blur-sm transform rotate-1"></div>
       <div className="bg-gray-200 pointer-events-none">

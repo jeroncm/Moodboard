@@ -1,15 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useLayoutEffect } from 'react';
 
 interface SearchBarProps {
-  onTopicSubmit: (topic: string) => void;
+  topic: string;
+  onTopicChange: (newTopic: string) => void;
+  onSubmit: () => void;
   isLoading?: boolean;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({ onTopicSubmit, isLoading }) => {
-  const [topic, setTopic] = useState('');
+export const SearchBar: React.FC<SearchBarProps> = ({ topic, onTopicChange, onSubmit, isLoading }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
@@ -27,7 +28,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onTopicSubmit, isLoading }
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (topic.trim() && !isLoading) {
-      onTopicSubmit(topic);
+      onSubmit();
     }
   };
 
@@ -44,18 +45,17 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onTopicSubmit, isLoading }
         <textarea
           ref={textareaRef}
           value={topic}
-          onChange={(e) => setTopic(e.target.value)}
+          onChange={(e) => onTopicChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="e.g., 'A moody cyberpunk city alleyway on a rainy night, glowing neon signs reflecting on wet pavement...'"
-          className="w-full p-4 pr-14 bg-transparent text-[#544c44] placeholder:text-[#8a8178] rounded-lg border-none focus:outline-none focus:ring-0 resize-none transition-all duration-200"
+          placeholder="e.g., 'A moody cyberpunk city alleyway on a rainy night, glowing neon signs...'"
+          className="w-full p-4 pr-16 bg-transparent text-[#544c44] placeholder:text-[#8a8178] rounded-lg border-none focus:outline-none focus:ring-0 resize-none transition-all duration-200 min-h-[56px]"
           disabled={isLoading}
-          rows={1}
           style={{ overflowY: 'hidden' }}
           required
         />
         <button
           type="submit"
-          className="absolute bottom-3 right-3 w-10 h-10 bg-[#70665c] text-white rounded-md hover:bg-[#544c44] transition-colors font-semibold disabled:bg-[#8a8178] disabled:cursor-not-allowed flex items-center justify-center"
+          className="absolute bottom-4 right-4 w-10 h-10 bg-[#70665c] text-white rounded-md hover:bg-[#544c44] transition-colors font-semibold disabled:bg-[#8a8178] disabled:cursor-not-allowed flex items-center justify-center"
           disabled={isLoading || !topic.trim()}
           aria-label="Create Mood Board"
         >

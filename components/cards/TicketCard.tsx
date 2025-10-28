@@ -3,10 +3,12 @@ import type { TicketItem } from '../../types';
 
 interface TicketCardProps extends TicketItem {
   onMouseDown: (event: React.MouseEvent, id: string) => void;
+  onItemClick: (item: TicketItem) => void;
 }
 
 
-export const TicketCard: React.FC<TicketCardProps> = ({ id, title, details, style, onMouseDown }) => {
+export const TicketCard: React.FC<TicketCardProps> = ({ onMouseDown, onItemClick, ...item }) => {
+  const { id, title, details, style } = item;
   return (
     <div
       data-draggable="true"
@@ -18,6 +20,7 @@ export const TicketCard: React.FC<TicketCardProps> = ({ id, title, details, styl
         WebkitMaskComposite: 'destination-in',
       }}
       onMouseDown={(e) => onMouseDown(e, id)}
+      onClick={() => onItemClick(item)}
     >
       <div className="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-4 bg-white/30 backdrop-blur-sm pointer-events-none"></div>
       <div className='pointer-events-none'>
